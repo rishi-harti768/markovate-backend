@@ -18,3 +18,25 @@ export const getRefreshToken = (id) => {
   });
   return token;
 };
+
+export const verifyToken = (token) => {
+  const verify = jwt.verify(token, secret, (err, decoded) => {
+    if (err) {
+      return false;
+    } else {
+      return true;
+    }
+  });
+  return verify;
+};
+
+export const decodeToken = (token) => {
+  const decoded = jwt.decode(token, secret, (err, decoded) => {
+    if (err) {
+      return null;
+    } else {
+      return decoded;
+    }
+  });
+  return decoded;
+};

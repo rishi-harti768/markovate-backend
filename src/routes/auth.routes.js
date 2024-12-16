@@ -12,8 +12,8 @@ router.post("/register", register);
 
 router.post("/login", login);
 
-router.post("/forgot-password-before", forgotPasswordBefore);
+router.post("/forgot-pass-before", forgotPasswordBefore);
 
-router.post("/forgot-password-after", forgotPasswordAfter);
+router.post("/forgot-pass-after", forgotPasswordAfter);
 
 export default router;

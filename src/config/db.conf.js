@@ -15,24 +15,34 @@ const pool = new Pool({
 pool.on("error", (err) => {
   console.log("error connecting to db", err.message);
 });
-
 export const DBinit = () => {
   const account = `
     CREATE TABLE IF NOT EXISTS accounts (
       id SERIAL PRIMARY KEY,
-      email VARCHAR(100) NOT NULL,
-      password VARCHAR(100) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
       verified BOOLEAN NOT NULL DEFAULT FALSE,
       account_type smallint NOT NULL DEFAULT 0,
-      email_token VARCHAR(100),
-      password_token VARCHAR(100)
+      email_token VARCHAR(255),
+      password_token VARCHAR(255),
+      username VARCHAR(255) UNIQUE,
+      org_id VARCHAR(255)
     );`;
-
+  const organization = ` 
+    CREATE TABLE IF NOT EXISTS organizations (
+      org_id SERIAL PRIMARY KEY,
+      org_name VARCHAR(255) NOT NULL UNIQUE,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      approved BOOLEAN NOT NULL DEFAULT FALSE
+    );`;
   try {
     pool.query(account);
+    pool.query(organization);
     console.log("Database Initialized");
   } catch (err) {
-    console.error("DBinit Error:" + err.message);
+    if (err.code !== "42P07") {
+      console.error("DBinit Error:" + err.message);
+    }
   }
 };
 

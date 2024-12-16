@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const client = process.env.CLIENT_URL;
 const hostEmail = process.env.HOST_EMAIL_ADDRESS;
 const password = process.env.HOST_EMAIL_PASSWORD;
 
@@ -19,7 +20,7 @@ export const sendForgotPasswordEmail = async (email, token) => {
     from: hostEmail,
     to: email,
     subject: "Password Reset",
-    html: `Click <a href="https://www.google.com/">here</a> to reset your password`,
+    html: `Click <a href="${client}/auth/forgot-pass/${email}/${token}">here</a> to reset your password`,
   };
   await transporter.sendMail(mailOptions, async (err, info) => {
     if (err) {
