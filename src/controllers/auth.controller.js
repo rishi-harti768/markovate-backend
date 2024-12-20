@@ -8,19 +8,19 @@ export const register = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      res.status(400).send("EMPTY_FIELDS");
+      res.status(200).send("EMPTY_FIELDS");
       return;
     }
     //check email format
     if (!isValidEmail(email)) {
-      res.status(400).send("INVALID_EMAIL_FORMAT");
+      res.status(200).send("INVALID_EMAIL_FORMAT");
       return;
     }
 
     //check password strength
 
     if (!isStrongPassword(password)) {
-      res.status(400).send("WEAK_PASSWORD");
+      res.status(200).send("WEAK_PASSWORD");
       return;
     }
 
@@ -30,7 +30,7 @@ export const register = async (req, res) => {
       [email]
     );
     if (checkAcc.rows.length > 0) {
-      res.status(400).send("EMAIL_ALREADY_EXISTS");
+      res.status(200).send("EMAIL_ALREADY_EXISTS");
       return;
     }
 
@@ -68,19 +68,19 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      res.status(400).send("EMPTY_FIELDS");
+      res.status(200).send("EMPTY_FIELDS");
       return;
     }
 
     //check email format
     if (!isValidEmail(email)) {
-      res.status(400).send("INVALID_EMAIL_FORMAT");
+      res.status(200).send("INVALID_EMAIL_FORMAT");
       return;
     }
 
     //check password strength
     if (!isStrongPassword(password)) {
-      res.status(400).send("WEAK_PASSWORD");
+      res.status(200).send("WEAK_PASSWORD");
       return;
     }
 
@@ -91,14 +91,14 @@ export const login = async (req, res) => {
     );
 
     if (checkAcc.rows.length != 1) {
-      res.status(400).send("EMAIL_NOT_FOUND");
+      res.status(200).send("EMAIL_NOT_FOUND");
       return;
     }
 
     //check password
     const isMatch = await bcrypt.compare(password, checkAcc.rows[0].password);
     if (!isMatch) {
-      res.status(400).send("INCORRECT_PASSWORD");
+      res.status(200).send("INCORRECT_PASSWORD");
       return;
     }
 
@@ -128,12 +128,12 @@ export const forgotPasswordBefore = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      res.status(400).send("EMPTY_FIELDS");
+      res.status(200).send("EMPTY_FIELDS");
       return;
     }
     //check email format
     if (!isValidEmail(email)) {
-      res.status(400).send("INVALID_EMAIL_FORMAT");
+      res.status(200).send("INVALID_EMAIL_FORMAT");
       return;
     }
 
@@ -144,7 +144,7 @@ export const forgotPasswordBefore = async (req, res) => {
     );
 
     if (searchAcc.rows.length != 1) {
-      res.status(400).send("EMAIL_NOT_FOUND");
+      res.status(200).send("EMAIL_NOT_FOUND");
       return;
     }
 
@@ -164,19 +164,19 @@ export const forgotPasswordAfter = async (req, res) => {
   try {
     const { email, password, token } = req.body;
     if (!email || !password || !token) {
-      res.status(400).send("EMPTY_FIELDS");
+      res.status(200).send("EMPTY_FIELDS");
       return;
     }
 
     // check email format
     if (!isValidEmail(email)) {
-      res.status(400).send("INVALID_EMAIL_FORMAT");
+      res.status(200).send("INVALID_EMAIL_FORMAT");
       return;
     }
 
     // password strength
     if (!isStrongPassword(password)) {
-      res.status(400).send("WEAK_PASSWORD");
+      res.status(200).send("WEAK_PASSWORD");
       return;
     }
 
@@ -187,13 +187,13 @@ export const forgotPasswordAfter = async (req, res) => {
     );
 
     if (searchAcc.rows.length != 1) {
-      res.status(400).send("EMAIL_NOT_FOUND");
+      res.status(200).send("EMAIL_NOT_FOUND");
       return;
     }
 
     // check token
     if (searchAcc.rows[0]["password_token"] != token) {
-      res.status(400).send("INVALID_TOKEN");
+      res.status(200).send("INVALID_TOKEN");
       return;
     }
 

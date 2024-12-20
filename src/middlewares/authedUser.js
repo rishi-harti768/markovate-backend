@@ -15,6 +15,8 @@ export const authenticate = async (req, res, next) => {
 
   // check if refresh token is valid
   if (!verifyRefresh) {
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
     res.status(400).send("DENIED_ACCESS");
     return;
   }
@@ -43,5 +45,6 @@ export const authenticate = async (req, res, next) => {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
   }
+  req.userCred = decodeRefresh.id;
   next();
 };

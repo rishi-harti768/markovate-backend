@@ -6,38 +6,41 @@ import cookieParser from "cookie-parser";
 
 export const fetchAccount = async (req, res) => {
   try {
-    const { id } = req.body;
+    const id = req.userCred;
+    if (!id) {
+      res.status(200).send("UNAUTHORIZED");
+      return;
+    }
+
     // check if acc exists
     const users = await pool.query(`SELECT * FROM accounts WHERE id = $1`, [
       id,
     ]);
     if (users.rows.length != 1) {
-      res.status(400).send("ACCOUNT_NOT_FOUND");
+      res.status(200).send("ACCOUNT_NOT_FOUND");
       return;
     }
     const account = users.rows[0];
 
     //check if acc is verified
     if (!account.verified) {
-      res.status(201).send("ACCOUNT_NOT_VERIFIED");
+      res.status(200).send("ACCOUNT_NOT_VERIFIED");
       return;
     }
 
     //check account setup
     if (account["username"] == null || account["account_type"] == 0) {
-      res.status(201).send("NEEDS_ACCOUNT_SETUP");
+      res.status(200).send("NEEDS_ACCOUNT_SETUP");
       return;
     }
 
     //check if acc is in an org
     if (account["org_id"] == null) {
-      res.status(201).send("NOT_IN_ORGANIZATION");
+      res.status(200).send("JOIN_ANY_ORG");
       return;
     }
 
     res.status(200).json({ account });
-
-    res.send("NOT_IMPLEMENTED");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -45,27 +48,36 @@ export const fetchAccount = async (req, res) => {
 
 export const emailVerificationBefore = async (req, res) => {
   try {
-    const { id } = req.body;
+    const id = req.userCred;
+
+    if (!id) {
+      res.status(200).send("UNAUTHORIZED");
+      return;
+    }
+
     // check if acc exists
     const searchAcc = await pool.query(`SELECT * FROM accounts WHERE id = $1`, [
       id,
     ]);
     if (searchAcc.rows.length != 1) {
-      res.status(400).send("ACCOUNT_NOT_FOUND");
+      res.status(200).send("ACCOUNT_NOT_FOUND");
       return;
     }
+
     // is acc already verified
     if (searchAcc.rows[0].verified) {
-      res.status(201).send("ACCOUNT_ALREADY_VERIFIED");
+      res.status(200).send("ACCOUNT_ALREADY_VERIFIED");
       return;
     }
+
     // send verification email
     const token = crypto.randomBytes(16).toString("hex");
     const grantemail = await pool.query(
-      `UPDATE accounts SET email_token = $1 WHERE id = $2`,
+      `UPDATE accounts SET email_token = $1 WHERE id = $2 RETURNING email`,
       [token, id]
     );
-    // sendEmailVerificationEmail(searchAcc.rows[0].email, token);
+    sendEmailVerificationEmail(id, grantemail.rows[0].email, token);
+
     res.status(200).send("EMAIL_VERIFICATION_SENT");
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -74,29 +86,35 @@ export const emailVerificationBefore = async (req, res) => {
 
 export const emailVerificationAfter = async (req, res) => {
   try {
-    const { email, token } = req.body;
-    if (!email || !token) {
+    const cookID = req.userCred;
+    const { id, token } = req.body;
+    if (!id || !token) {
       throw new Error("Missing required fields");
     }
+    /*  if (id != cookID) {
+      res.status(400).send("UNAUTHORIZED");
+      return;
+    } */
+
     // check if acc exists
     const searchAcc = await pool.query(
-      `SELECT * FROM accounts WHERE email = $1;`,
-      [email]
+      `SELECT * FROM accounts WHERE id = $1;`,
+      [id]
     );
     if (searchAcc.rows.length != 1) {
-      res.status(400).send("ACCOUNT_NOT_FOUND");
+      res.status(200).send("ACCOUNT_NOT_FOUND");
       return;
     }
 
     // check token
     if (searchAcc.rows[0]["email_token"] != token) {
-      res.status(201).send("INCORRECT_TOKEN");
+      res.status(200).send("INCORRECT_TOKEN");
       return;
     }
 
     const grantemail = await pool.query(
-      `UPDATE accounts SET email_token = null, verified = true WHERE email = $1`,
-      [email]
+      `UPDATE accounts SET email_token = null, verified = true WHERE id = $1`,
+      [id]
     );
 
     res.status(200).send("EMAIL_VERIFIED");

@@ -31,12 +31,12 @@ export const sendForgotPasswordEmail = async (email, token) => {
   });
 };
 
-export const sendEmailVerificationEmail = async (email, token) => {
+export const sendEmailVerificationEmail = async (id, email, token) => {
   var mailOptions = {
     from: hostEmail,
     to: email,
-    subject: "Password Reset",
-    html: `Click <a href="https://www.google.com/">here</a> to get verified`,
+    subject: "Email Verification",
+    html: `Click <a href="${client}/dashboard/get-verified/${id}/${token}">here</a> to get verified`,
   };
   await transporter.sendMail(mailOptions, async (err, info) => {
     if (err) {

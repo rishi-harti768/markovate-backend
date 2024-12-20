@@ -12,11 +12,11 @@ import { authenticate } from "../middlewares/authedUser.js";
 
 const router = express.Router();
 
-router.post("/fetch-account", fetchAccount);
+router.post("/fetch-account", authenticate, fetchAccount);
 
-router.post("/email-verify-before", emailVerificationBefore);
+router.post("/email-verify-before", authenticate, emailVerificationBefore);
 
-router.post("/email-verify-after", emailVerificationAfter);
+router.post("/email-verify-after", authenticate, emailVerificationAfter);
 
 router.post("/setup-account", accountSetup);
 

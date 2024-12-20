@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import bodyParser from "body-parser";
 
 import authRoutes from "./routes/auth.routes.js";
 import accountRoutes from "./routes/account.routes.js";
@@ -29,20 +28,13 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Add this line to parse URL-encoded cookies
 
+app.get("/", (req, res) => res.send("server is running"));
+
 app.use("/auth", authRoutes);
 app.use("/account", accountRoutes);
 
-app.post("/test-cookies-set", (req, res) => {
-  res.cookie("testCookie", "testValue2", {
-    httpOnly: true,
-    secure: false,
-    maxAge: 24 * 60 * 60 * 1000,
-  });
-  res.send("Cookie set successfully");
-});
-
-app.post("/test", authenticate, (req, res) => {
-  res.send("welcome");
+app.post("/test", authenticate, async (req, res) => {
+  res.status(200).send(req.userCred);
 });
 
 DBinit();
