@@ -4,43 +4,32 @@ import crypto from "crypto";
 import express from "express";
 import cookieParser from "cookie-parser";
 
-export const fetchAccount = async (req, res) => {
+export const getDashboard = async (req, res) => {
   try {
     const id = req.userCred;
     if (!id) {
-      res.status(200).send("UNAUTHORIZED");
-      return;
+      return res.status(200).send("UNAUTHORIZED");
     }
 
     // check if acc exists
-    const users = await pool.query(`SELECT * FROM accounts WHERE id = $1`, [
+    const { rows } = await pool.query(`SELECT * FROM accounts WHERE id = $1`, [
       id,
     ]);
-    if (users.rows.length != 1) {
-      res.status(200).send("ACCOUNT_NOT_FOUND");
-      return;
-    }
-    const account = users.rows[0];
 
-    //check if acc is verified
+    if (rows.length !== 1) {
+      return res.status(200).send("ACCOUNT_NOT_FOUND");
+    }
+
+    const account = rows[0];
+
+    // check if acc is verified
     if (!account.verified) {
-      res.status(200).send("ACCOUNT_NOT_VERIFIED");
-      return;
+      return res.status(200).send("ACCOUNT_NOT_VERIFIED");
     }
 
-    //check account setup
-    if (account["username"] == null || account["account_type"] == 0) {
-      res.status(200).send("NEEDS_ACCOUNT_SETUP");
-      return;
-    }
-
-    //check if acc is in an org
-    if (account["org_id"] == null) {
-      res.status(200).send("JOIN_ANY_ORG");
-      return;
-    }
-
-    res.status(200).json({ account });
+    return res.status(200).send({
+      orgs: account.organ === null ? [] : account.organ,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -50,9 +39,10 @@ export const emailVerificationBefore = async (req, res) => {
   try {
     const id = req.userCred;
 
-    if (!id) {
-      res.status(200).send("UNAUTHORIZED");
-      return;
+    const { action } = req.body;
+
+    if (!id || !action) {
+      return res.status(200).send("MISSING_FIELDS");
     }
 
     // check if acc exists
@@ -60,25 +50,30 @@ export const emailVerificationBefore = async (req, res) => {
       id,
     ]);
     if (searchAcc.rows.length != 1) {
-      res.status(200).send("ACCOUNT_NOT_FOUND");
-      return;
+      return res.status(200).send("ACCOUNT_NOT_FOUND");
     }
 
-    // is acc already verified
-    if (searchAcc.rows[0].verified) {
-      res.status(200).send("ACCOUNT_ALREADY_VERIFIED");
-      return;
+    if (action === "mail") {
+      // is acc already verified
+      if (searchAcc.rows[0].verified) {
+        return res.status(200).send("ACCOUNT_ALREADY_VERIFIED");
+      }
+
+      // send verification email
+      const token = crypto.randomBytes(16).toString("hex");
+      const grantemail = await pool.query(
+        `UPDATE accounts SET email_token = $1 WHERE id = $2 RETURNING email`,
+        [token, id]
+      );
+      sendEmailVerificationEmail(id, grantemail.rows[0].email, token);
+
+      return res.status(200).send("EMAIL_VERIFICATION_SENT");
+    } else if (action === "check") {
+      // is acc already verified
+      return res.status(200).send({ verified: searchAcc.rows[0].verified });
+    } else {
+      throw new Error("Invalid action");
     }
-
-    // send verification email
-    const token = crypto.randomBytes(16).toString("hex");
-    const grantemail = await pool.query(
-      `UPDATE accounts SET email_token = $1 WHERE id = $2 RETURNING email`,
-      [token, id]
-    );
-    sendEmailVerificationEmail(id, grantemail.rows[0].email, token);
-
-    res.status(200).send("EMAIL_VERIFICATION_SENT");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -86,15 +81,10 @@ export const emailVerificationBefore = async (req, res) => {
 
 export const emailVerificationAfter = async (req, res) => {
   try {
-    const cookID = req.userCred;
     const { id, token } = req.body;
     if (!id || !token) {
-      throw new Error("Missing required fields");
+      return res.status(200).send("MISSING_FIELDS");
     }
-    /*  if (id != cookID) {
-      res.status(400).send("UNAUTHORIZED");
-      return;
-    } */
 
     // check if acc exists
     const searchAcc = await pool.query(
@@ -118,6 +108,68 @@ export const emailVerificationAfter = async (req, res) => {
     );
 
     res.status(200).send("EMAIL_VERIFIED");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getMyProfile = async (req, res) => {
+  try {
+    let id = req.userCred;
+    if (!id) {
+      return res.status(200).send("UNAUTHORIZED");
+    }
+
+    // check if acc exists
+    const { rows } = await pool.query(`SELECT * FROM accounts WHERE id = $1;`, [
+      id,
+    ]);
+
+    if (rows.length !== 1) {
+      return res.status(200).send("ACCOUNT_NOT_FOUND");
+    }
+    if (!rows[0].profile) {
+      return res.status(200).send("NO_PROFILE");
+    }
+
+    return res.status(200).send(rows[0].profile);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const setMyProfile = async (req, res) => {
+  try {
+    const id = req.userCred;
+    const { profile } = req.body;
+
+    if (!id) {
+      return res.status(200).send("UNAUTHORIZED");
+    }
+
+    const requiredKeys = ["first_name", "last_name", "gender", "date_of_birth"];
+
+    // check if all required keys are present
+    const missingKeys = requiredKeys.filter((key) => !(key in profile));
+    if (missingKeys.length) {
+      return res.status(200).send("MISSING_FIELDS");
+    }
+
+    // check if acc exists
+    const searchAcc = await pool.query(`SELECT * FROM accounts WHERE id = $1`, [
+      id,
+    ]);
+
+    if (searchAcc.rows.length != 1) {
+      return res.status(200).send("ACCOUNT_NOT_FOUND");
+    }
+
+    const updateacc = await pool.query(
+      `UPDATE accounts SET profile = $1 WHERE id = $2`,
+      [{ ...profile }, id]
+    );
+
+    res.status(200).send("PROFILE_UPDATED");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

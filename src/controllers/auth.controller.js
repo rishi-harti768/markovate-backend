@@ -3,25 +3,28 @@ import bcrypt from "bcrypt";
 import { getAccessToken, getRefreshToken } from "../utils/jwt.utils.js";
 import crypto from "crypto";
 import { sendForgotPasswordEmail } from "../services/email.service.js";
+import dotenv from "dotenv";
+
+dotenv.config();
+const envSec = process.env.NODE_ENV === "production";
 
 export const register = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
-      res.status(200).send("EMPTY_FIELDS");
-      return;
+      return res.status(200).send("EMPTY_FIELDS");
     }
+
     //check email format
     if (!isValidEmail(email)) {
-      res.status(200).send("INVALID_EMAIL_FORMAT");
-      return;
+      return res.status(200).send("INVALID_EMAIL_FORMAT");
     }
 
     //check password strength
 
     if (!isStrongPassword(password)) {
-      res.status(200).send("WEAK_PASSWORD");
-      return;
+      return res.status(200).send("WEAK_PASSWORD");
     }
 
     //check if acc exists
@@ -30,8 +33,7 @@ export const register = async (req, res) => {
       [email]
     );
     if (checkAcc.rows.length > 0) {
-      res.status(200).send("EMAIL_ALREADY_EXISTS");
-      return;
+      return res.status(200).send("EMAIL_ALREADY_EXISTS");
     }
 
     // create new acc
@@ -48,13 +50,13 @@ export const register = async (req, res) => {
     //set cookies
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: false,
+      secure: envSec,
       maxAge: 1000 * 60 * 15, // 15 mins
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: envSec,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
 
@@ -68,20 +70,17 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      res.status(200).send("EMPTY_FIELDS");
-      return;
+      return res.status(200).send("EMPTY_FIELDS");
     }
 
     //check email format
     if (!isValidEmail(email)) {
-      res.status(200).send("INVALID_EMAIL_FORMAT");
-      return;
+      return res.status(200).send("INVALID_EMAIL_FORMAT");
     }
 
     //check password strength
     if (!isStrongPassword(password)) {
-      res.status(200).send("WEAK_PASSWORD");
-      return;
+      return res.status(200).send("WEAK_PASSWORD");
     }
 
     //check if acc exists
@@ -91,15 +90,13 @@ export const login = async (req, res) => {
     );
 
     if (checkAcc.rows.length != 1) {
-      res.status(200).send("EMAIL_NOT_FOUND");
-      return;
+      return res.status(200).send("EMAIL_NOT_FOUND");
     }
 
     //check password
     const isMatch = await bcrypt.compare(password, checkAcc.rows[0].password);
     if (!isMatch) {
-      res.status(200).send("INCORRECT_PASSWORD");
-      return;
+      return res.status(200).send("INCORRECT_PASSWORD");
     }
 
     //generate tokens
@@ -109,15 +106,16 @@ export const login = async (req, res) => {
     //set cookies
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: false,
+      secure: envSec,
       maxAge: 1000 * 60 * 15, // 15 mins
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: envSec,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
+
     res.status(200).send("AUTHED");
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -22,11 +22,10 @@ export const DBinit = () => {
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
       verified BOOLEAN NOT NULL DEFAULT FALSE,
-      account_type smallint NOT NULL DEFAULT 0,
       email_token VARCHAR(255),
       password_token VARCHAR(255),
-      username VARCHAR(255) UNIQUE,
-      org_id VARCHAR(255)
+      profile json,
+      organ integer[] DEFAULT NULL
     );`;
   const organization = ` 
     CREATE TABLE IF NOT EXISTS organizations (

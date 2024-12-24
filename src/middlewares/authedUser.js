@@ -4,6 +4,10 @@ import {
   getRefreshToken,
   verifyToken,
 } from "../utils/jwt.utils.js";
+import dotenv from "dotenv";
+
+dotenv.config();
+const envSec = process.env.NODE_ENV === "production";
 
 export const authenticate = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
@@ -28,7 +32,7 @@ export const authenticate = async (req, res, next) => {
     const newAccessToken = getAccessToken(decodeRefresh.id);
     res.cookie("accessToken", newAccessToken, {
       httpOnly: true,
-      secure: false,
+      secure: envSec,
       maxAge: 1000 * 60 * 15, // 15 mins
     });
   }
@@ -41,7 +45,7 @@ export const authenticate = async (req, res, next) => {
     const newRefreshToken = getRefreshToken(decodeRefresh.id);
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: envSec,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
   }
