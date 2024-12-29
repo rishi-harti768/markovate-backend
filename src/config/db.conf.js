@@ -21,21 +21,34 @@ export const DBinit = () => {
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
+      account_type VARCHAR(255) NOT NULL DEFAULT 'CLIENT',
       verified BOOLEAN NOT NULL DEFAULT FALSE,
       email_token VARCHAR(255),
       password_token VARCHAR(255),
       profile json,
       organ integer[] DEFAULT NULL
     );`;
-  const organization = ` 
+
+  const organizationReg = `
+    CREATE TABLE IF NOT EXISTS organization_reg (
+      org_name VARCHAR(255) UNIQUE,
+      edu_email VARCHAR(255) NOT NULL UNIQUE,
+      org_host VARCHAR(255) NOT NULL,
+      mail_token VARCHAR(255) NOT NULL
+    );`;
+
+  const organization = `
     CREATE TABLE IF NOT EXISTS organizations (
       org_id SERIAL PRIMARY KEY,
       org_name VARCHAR(255) NOT NULL UNIQUE,
-      email VARCHAR(255) NOT NULL UNIQUE,
-      approved BOOLEAN NOT NULL DEFAULT FALSE
+      edu_email VARCHAR(255) NOT NULL UNIQUE,
+      status varchar(255) NOT NULL DEFAULT 'verification_pending',
+      org_host VARCHAR(255) NOT NULL
     );`;
+
   try {
     pool.query(account);
+    pool.query(organizationReg);
     pool.query(organization);
     console.log("Database Initialized");
   } catch (err) {

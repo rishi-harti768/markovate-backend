@@ -7,10 +7,11 @@ import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes.js";
 import accountRoutes from "./routes/account.routes.js";
+import orgRoutes from "./routes/organization.routes.js";
 
 import { DBinit } from "./config/db.conf.js";
 import cookieParser from "cookie-parser";
-import { authenticate } from "./middlewares/authedUser.js";
+
 
 dotenv.config();
 
@@ -42,10 +43,7 @@ app.get("/", (req, res) => res.send("server is running"));
 
 app.use("/auth", authRoutes);
 app.use("/account", accountRoutes);
-
-app.post("/test", authenticate, async (req, res) => {
-  res.status(200).send(req.userCred);
-});
+app.use("/orgs", orgRoutes);
 
 DBinit();
 

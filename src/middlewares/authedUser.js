@@ -1,3 +1,4 @@
+import pool from "../config/db.conf.js";
 import {
   decodeToken,
   getAccessToken,
@@ -49,6 +50,19 @@ export const authenticate = async (req, res, next) => {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
   }
+
+  // check if acc exist
+
+  const acc = await pool.query(`SELECT * FROM accounts WHERE id = $1`, [
+    decodeRefresh.id,
+  ]);
+
+  if (acc.rows.length !== 1) {
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
+    return res.status(200).send("FORCE_AUTH_OUT");
+  }
+
   req.userCred = decodeRefresh.id;
   next();
 };
