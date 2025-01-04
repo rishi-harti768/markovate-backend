@@ -31,17 +31,22 @@ export const DBinit = () => {
 
   const organizationReg = `
     CREATE TABLE IF NOT EXISTS organization_reg (
-      org_name VARCHAR(255) UNIQUE,
-      edu_email VARCHAR(255) NOT NULL UNIQUE,
-      org_host VARCHAR(255) NOT NULL,
-      mail_token VARCHAR(255) NOT NULL
+      org_name VARCHAR(255) NOT NULL UNIQUE,
+      inst_name VARCHAR(255) NOT NULL UNIQUE,
+      org_host INTEGER NOT NULL,
+      website VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      phone VARCHAR(255) NOT NULL,
+      mail_token VARCHAR(255),
+      status varchar(255) NOT NULL DEFAULT 'Queued'
     );`;
 
   const organization = `
     CREATE TABLE IF NOT EXISTS organizations (
       org_id SERIAL PRIMARY KEY,
       org_name VARCHAR(255) NOT NULL UNIQUE,
-      edu_email VARCHAR(255) NOT NULL UNIQUE,
+      inst_name VARCHAR(255) NOT NULL UNIQUE,
+      email VARCHAR(255) NOT NULL UNIQUE,
       status varchar(255) NOT NULL DEFAULT 'verification_pending',
       org_host VARCHAR(255) NOT NULL
     );`;

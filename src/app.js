@@ -7,18 +7,20 @@ import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.routes.js";
 import accountRoutes from "./routes/account.routes.js";
-import orgRoutes from "./routes/organization.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 import { DBinit } from "./config/db.conf.js";
 import cookieParser from "cookie-parser";
 
+import { Server } from "socket.io";
+import { AdminSetup } from "./routes/admin.socket.js";
 
 dotenv.config();
 
 const limiter = rateLimit({
-  windowMs: 1000 * 60 * 60, // 1 hour
-  max: 6000, // 100 RPM
-  message: "SUSPENDED_DUE_TO_RATE_LIMIT",
+  windowMs: 600,
+  max: 1, // 100 RPM
+  message: { resCode: "TOO_MANY_REQUESTS", resErrMsg: "Too many requests" },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -43,10 +45,19 @@ app.get("/", (req, res) => res.send("server is running"));
 
 app.use("/auth", authRoutes);
 app.use("/account", accountRoutes);
-app.use("/orgs", orgRoutes);
+app.use("/admin", adminRoutes);
 
 DBinit();
 
-app.listen(process.env.HOST_PORT, () => {
+const server = app.listen(process.env.HOST_PORT, () => {
   console.log(`Server running on port ${process.env.HOST_PORT}`);
 });
+
+const io = new Server(server, {
+  cors: {
+    origin: `${process.env.CLIENT_URL}`,
+    credentials: true,
+  },
+});
+
+AdminSetup(io);
