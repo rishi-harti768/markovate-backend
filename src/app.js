@@ -12,14 +12,11 @@ import adminRoutes from "./routes/admin.routes.js";
 import { DBinit } from "./config/db.conf.js";
 import cookieParser from "cookie-parser";
 
-import { Server } from "socket.io";
-import { AdminSetup } from "./routes/admin.socket.js";
-
 dotenv.config();
 
 const limiter = rateLimit({
-  windowMs: 600,
-  max: 1, // 100 RPM
+  windowMs: 1 * 60 * 1000,
+  max: 100, // 100 RPM
   message: { resCode: "TOO_MANY_REQUESTS", resErrMsg: "Too many requests" },
   standardHeaders: true,
   legacyHeaders: false,
@@ -49,15 +46,6 @@ app.use("/admin", adminRoutes);
 
 DBinit();
 
-const server = app.listen(process.env.HOST_PORT, () => {
+app.listen(process.env.HOST_PORT, () => {
   console.log(`Server running on port ${process.env.HOST_PORT}`);
 });
-
-const io = new Server(server, {
-  cors: {
-    origin: `${process.env.CLIENT_URL}`,
-    credentials: true,
-  },
-});
-
-AdminSetup(io);

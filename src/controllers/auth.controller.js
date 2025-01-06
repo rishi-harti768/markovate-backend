@@ -4,27 +4,55 @@ import { getAccessToken, getRefreshToken } from "../utils/jwt.utils.js";
 import crypto from "crypto";
 import { sendForgotPasswordEmail } from "../services/email.service.js";
 import dotenv from "dotenv";
+import validator from "validator";
 
 dotenv.config();
+
 const envSec = process.env.NODE_ENV === "production";
 
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(200).json({ resCode: "EMPTY_FIELDS" });
+    // check for empty fields
+
+    let errjson = {};
+
+    if (!email || (email && email.trim()) == "") {
+      errjson.email = "Email is Required";
     }
 
+    if (!password || (password && password.trim() == "")) {
+      errjson.password = "Password is Required";
+    }
+
+    if (Object.keys(errjson).length > 0) {
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: { error: errjson },
+      });
+    }
+
+    // sanitize inputs
+    email = email.trim().toLowerCase();
+    password = password.trim();
+
+    errjson = {};
     //check email format
-    if (!isValidEmail(email)) {
-      return res.status(200).json({ resCode: "INVALID_EMAIL_FORMAT" });
+    if (!validator.isEmail(email)) {
+      errjson.email = "Invalid Email Format";
     }
 
     //check password strength
-
     if (!isStrongPassword(password)) {
-      return res.status(200).json({ resCode: "WEAK_PASSWORD" });
+      errjson.password = "Strong Password Required";
+    }
+
+    if (Object.keys(errjson).length > 0) {
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: { error: errjson },
+      });
     }
 
     //check if acc exists
@@ -33,9 +61,10 @@ export const register = async (req, res) => {
       [email]
     );
     if (checkAcc.rows.length > 0) {
-      return res
-        .status(200)
-        .json({ resCode: "AUTH_REGISTER_EMAIL_ALREADY_EXISTS" });
+      return res.status(200).json({
+        resCode: "AUTH_ACC_ALREADY_EXISTS",
+        resData: { error: { email: "Account already exists" } },
+      });
     }
 
     // create new acc

@@ -40,3 +40,16 @@ export const authorizeAdmin = async (req, res) => {
     res.status(500).json({ resErrMsg: error.message });
   }
 };
+
+export const getAdminDashhboard = async (req, res) => {
+  try {
+    return res.status(200).json({
+      resCode: "GET_ADMIN_DASHBOARD",
+      resData: {
+        restext: "OK",
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ resErrMsg: error.message });
+  }
+};
