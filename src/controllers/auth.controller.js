@@ -102,18 +102,40 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(200).json({ resCode: "EMPTY_FIELDS" });
+
+    let errjson = {};
+
+    if (!email || (email && email.trim()) == "") {
+      errjson.email = "Email is Required";
     }
 
+    if (!password || (password && password.trim() == "")) {
+      errjson.password = "Password is Required";
+    }
+
+    if (Object.keys(errjson).length > 0) {
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: { error: errjson },
+      });
+    }
+
+    errjson = {};
     //check email format
-    if (!isValidEmail(email)) {
-      return res.status(200).json({ resCode: "INVALID_EMAIL_FORMAT" });
+    if (!validator.isEmail(email)) {
+      errjson.email = "Invalid Email Format";
     }
 
     //check password strength
     if (!isStrongPassword(password)) {
-      return res.status(200).json({ resCode: "WEAK_PASSWORD" });
+      errjson.password = "Strong Password Required";
+    }
+
+    if (Object.keys(errjson).length > 0) {
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: { error: errjson },
+      });
     }
 
     //check if acc exists
@@ -123,19 +145,21 @@ export const login = async (req, res) => {
     );
 
     if (checkAcc.rows.length != 1) {
-      // email not fount
-      return res
-        .status(200)
-        .json({ resCode: "AUTH_LOGIN_INVALID_EMAIL_OR_PASSWORD" });
+      // email not found
+      return res.status(200).json({
+        resCode: "AUTH_FAILED",
+        resData: { error: { general: "Invalid Email or Password" } },
+      });
     }
 
     //check password
     const isMatch = await bcrypt.compare(password, checkAcc.rows[0].password);
     if (!isMatch) {
       // incorrect password
-      return res
-        .status(200)
-        .json({ resCode: "AUTH_LOGIN_INVALID_EMAIL_OR_PASSWORD" });
+      return res.status(200).json({
+        resCode: "AUTH_FAILED",
+        resData: { error: { general: "Invalid Email or Password" } },
+      });
     }
 
     //generate tokens
