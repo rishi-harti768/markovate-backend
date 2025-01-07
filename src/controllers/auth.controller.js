@@ -101,7 +101,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
     let errjson = {};
 
@@ -192,7 +192,7 @@ export const login = async (req, res) => {
 
 export const forgotPass = async (req, res) => {
   try {
-    const { email } = req.body;
+    let { email } = req.body;
     if (!email) {
       return res.status(200).json({
         resCode: "INPUT_ERROR",
