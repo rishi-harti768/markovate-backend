@@ -113,6 +113,9 @@ export const login = async (req, res) => {
       errjson.password = "Password is Required";
     }
 
+    email = email.trim().toLowerCase();
+    password = password.trim();
+
     if (Object.keys(errjson).length > 0) {
       return res.status(200).json({
         resCode: "INPUT_ERROR",
@@ -191,12 +194,28 @@ export const forgotPass = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(200).json({ resCode: "EMPTY_FIELDS" });
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: {
+          error: {
+            email: "Email is Required",
+          },
+          mailSent: false,
+        },
+      });
     }
 
     //check email format
-    if (!isValidEmail(email)) {
-      return res.status(200).json({ resCode: "INVALID_EMAIL_FORMAT" });
+    if (!validator.isEmail(email)) {
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: {
+          error: {
+            email: "Invalid Email Format",
+          },
+          mailSent: false,
+        },
+      });
     }
 
     // check if acc exists
@@ -206,7 +225,15 @@ export const forgotPass = async (req, res) => {
     );
 
     if (searchAcc.rows.length != 1) {
-      return res.status(200).json({ resCode: "AUTH_FP_EMAIL_NOT_FOUND" });
+      return res.status(200).json({
+        resCode: "AUTH_FAILED",
+        resData: {
+          error: {
+            email: "Email not found",
+          },
+          mailSent: false,
+        },
+      });
     }
 
     const token = crypto.randomBytes(16).toString("hex");
@@ -214,8 +241,15 @@ export const forgotPass = async (req, res) => {
       `UPDATE accounts SET password_token = $1 WHERE email = $2`,
       [token, email]
     );
+
     await sendForgotPasswordEmail(email, token);
-    res.status(200).json({ resCode: "AUTH_FP_EMAIL_SENT" });
+
+    res.status(200).json({
+      resCode: "AUTH_FP_EMAIL_SENT",
+      resData: {
+        mailSent: true,
+      },
+    });
   } catch (error) {
     res.status(500).json({ resErrMsg: error.message });
   }
@@ -223,19 +257,45 @@ export const forgotPass = async (req, res) => {
 
 export const forgotPassChangePass = async (req, res) => {
   try {
-    const { email, password, token } = req.body;
-    if (!email || !password || !token) {
-      return res.status(200).json({ resCode: "EMPTY_FIELDS" });
+    let { email, password, token } = req.body;
+
+    if (!token || !email) {
+      res.status(200).json({
+        resCode: "AUTH_FP_INVALID-URL",
+        resRoute: "/auth/forgot-pass",
+      });
     }
 
+    if (!password) {
+      return res.status(200).json({
+        resCode: "INPUT_ERROR",
+        resData: {
+          error: { password: "Password is Required" },
+          pwdChanged: false,
+        },
+      });
+    }
+
+    email = email.trim().toLowerCase();
+    password = password.trim();
+
     // check email format
-    if (!isValidEmail(email)) {
-      return res.status(200).json({ resCode: "INVALID_EMAIL_FORMAT" });
+    if (!validator.isEmail(email)) {
+      return res.status(200).json({
+        resCode: "INVALID_EMAIL_FORMAT",
+        resRoute: "/auth/forgot-pass",
+      });
     }
 
     // password strength
     if (!isStrongPassword(password)) {
-      return res.status(200).json({ resCode: "WEAK_PASSWORD" });
+      return res.status(200).json({
+        resCode: "AUTH_WEAK_PASSWORD",
+        resData: {
+          error: { password: "Strong Password is Required" },
+          pwdChanged: false,
+        },
+      });
     }
 
     // check if acc exists
@@ -245,12 +305,21 @@ export const forgotPassChangePass = async (req, res) => {
     );
 
     if (searchAcc.rows.length != 1) {
-      return res.status(200).json({ resCode: "AUTH_FP_EMAIL_NOT_FOUND" });
+      return res.status(200).json({
+        resCode: "AUTH_FP_EMAIL_NOT_FOUND",
+        resData: {
+          error: { email: "Account not found with this Email" },
+          pwdChanged: false,
+        },
+      });
     }
 
     // check token
     if (searchAcc.rows[0]["password_token"] != token) {
-      return res.status(200).json({ resCode: "AUTH_FP_INVALID_TOKEN" });
+      return res.status(200).json({
+        resCode: "AUTH_FP_INVALID_TOKEN",
+        resRoute: "/auth/forgot-pass",
+      });
     }
 
     // hash password
@@ -264,7 +333,7 @@ export const forgotPassChangePass = async (req, res) => {
 
     res
       .status(200)
-      .json({ resCode: "AUTH_FP_CHANGED", resRoute: "/auth/login" });
+      .json({ resCode: "AUTH_FP_CHANGED", resData: { pwdChanged: true } });
   } catch (error) {
     res.status(500).json({ resErrMsg: error.message });
   }
