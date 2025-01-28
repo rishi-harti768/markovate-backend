@@ -19,11 +19,11 @@ export const register = async (req, res) => {
     let errjson = {};
 
     if (!email || (email && email.trim()) == "") {
-      errjson.email = "Email is Required";
+      errjson.email = '"Email" is Required';
     }
 
     if (!password || (password && password.trim() == "")) {
-      errjson.password = "Password is Required";
+      errjson.password = '"Password" is Required';
     }
 
     if (Object.keys(errjson).length > 0) {
@@ -63,7 +63,7 @@ export const register = async (req, res) => {
     if (checkAcc.rows.length > 0) {
       return res.status(200).json({
         resCode: "AUTH_ACC_ALREADY_EXISTS",
-        resData: { error: { email: "Account already exists" } },
+        resData: { error: { email: "This Email already exists" } },
       });
     }
 
@@ -106,11 +106,11 @@ export const login = async (req, res) => {
     let errjson = {};
 
     if (!email || (email && email.trim()) == "") {
-      errjson.email = "Email is Required";
+      errjson.email = '"Email" is Required';
     }
 
     if (!password || (password && password.trim() == "")) {
-      errjson.password = "Password is Required";
+      errjson.password = '"Password" is Required';
     }
 
     email = email.trim().toLowerCase();
@@ -126,12 +126,12 @@ export const login = async (req, res) => {
     errjson = {};
     //check email format
     if (!validator.isEmail(email)) {
-      errjson.email = "Invalid Email Format";
+      errjson.email = "Invalid Email format";
     }
 
     //check password strength
     if (!isStrongPassword(password)) {
-      errjson.password = "Strong Password Required";
+      errjson.password = "Strong Password required";
     }
 
     if (Object.keys(errjson).length > 0) {
@@ -205,6 +205,8 @@ export const forgotPass = async (req, res) => {
       });
     }
 
+    email = email.trim().toLowerCase();
+
     //check email format
     if (!validator.isEmail(email)) {
       return res.status(200).json({
@@ -260,8 +262,8 @@ export const forgotPassChangePass = async (req, res) => {
     let { email, password, token } = req.body;
 
     if (!token || !email) {
-      res.status(200).json({
-        resCode: "AUTH_FP_INVALID-URL",
+      return res.status(200).json({
+        resCode: "AUTH_FP_INVALID_URL",
         resRoute: "/auth/forgot-pass",
       });
     }
@@ -339,12 +341,7 @@ export const forgotPassChangePass = async (req, res) => {
   }
 };
 
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-function isStrongPassword(password) {
+const isStrongPassword = (password) => {
   const minLength = 8;
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
@@ -358,4 +355,4 @@ function isStrongPassword(password) {
     hasNumber &&
     hasSpecialChar
   );
-}
+};

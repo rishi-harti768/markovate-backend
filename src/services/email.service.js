@@ -47,12 +47,12 @@ export const sendEmailVerificationEmail = async (id, email, token) => {
   });
 };
 
-export const sendOrgFormEmail = async (email, token) => {
+export const sendOrgRegEmail = async (email, token) => {
   var mailOptions = {
     from: hostEmail,
     to: email,
     subject: "New Organization",
-    html: `Click <a href="${client}/dashboard/register-org/${token}">here</a> to create new organization`,
+    html: `Click <a href="${client}/dashboard/register-org/${token}">here</a> to verify your new organization`,
   };
   await transporter.sendMail(mailOptions, async (err, info) => {
     if (err) {
